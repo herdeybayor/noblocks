@@ -82,7 +82,7 @@ export const TransferModal = ({
   const handleTransfer = async (data: FormData) => {
     try {
       const fetchedTokens: Token[] =
-        fetchSupportedTokens(client?.chain.name) || [];
+        fetchSupportedTokens(selectedNetwork.chain.name) || [];
 
       const searchToken = token.toUpperCase();
       const tokenData = fetchedTokens.find(
@@ -102,15 +102,19 @@ export const TransferModal = ({
       setIsConfirming(true);
 
       await client?.sendTransaction({
-        to: tokenAddress,
-        data: encodeFunctionData({
-          abi: erc20Abi,
-          functionName: "transfer",
-          args: [
-            data.recipientAddress as `0x${string}`,
-            parseUnits(data.amount.toString(), tokenDecimals),
-          ],
-        }),
+        calls: [
+          {
+            to: tokenAddress,
+            data: encodeFunctionData({
+              abi: erc20Abi,
+              functionName: "transfer",
+              args: [
+                data.recipientAddress as `0x${string}`,
+                parseUnits(data.amount.toString(), tokenDecimals),
+              ],
+            }),
+          },
+        ],
       });
 
       setTransferAmount(data.amount.toString());

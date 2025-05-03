@@ -429,8 +429,8 @@ export const KycModal = ({
         </DialogTitle>
 
         <p className="text-gray-500 dark:text-white/50">
-          Some documents you uploaded couldn't be verified. Please check all
-          requirements and upload again
+          Some documents you uploaded couldn&apos;t be verified. Please check
+          all requirements and upload again
         </p>
       </div>
 

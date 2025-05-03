@@ -6,7 +6,7 @@ import { SiweMessage } from "siwe";
 import { formatEthAddress } from "@/app/utils";
 
 // Configure Auth Providers
-export const authOptions = {
+const authOptions: AuthOptions = {
   providers: [
     // Traditional Credentials Provider
     CredentialsProvider({
@@ -130,6 +130,6 @@ export const authOptions = {
   },
 };
 
-const handler = NextAuth(authOptions as AuthOptions);
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
