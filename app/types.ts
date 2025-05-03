@@ -231,10 +231,11 @@ export type KYCStatusResponse = {
 
 export type Config = {
   aggregatorUrl: string;
-  privyAppId: string;
   mixpanelToken: string;
   hotjarSiteId: number;
   contactSupportUrl: string;
+  nextAuthUrl: string;
+  nextAuthSecret: string;
 };
 
 export type Network = {

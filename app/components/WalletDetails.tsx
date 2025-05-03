@@ -7,7 +7,7 @@ import {
   shortenAddress,
 } from "../utils";
 import { useBalance } from "../context/BalanceContext";
-import { usePrivy } from "@privy-io/react-auth";
+import { useAuth } from "../context/AuthContext";
 import { useNetwork } from "../context/NetworksContext";
 import { TransferModal } from "./TransferModal";
 import {
@@ -50,14 +50,16 @@ export const WalletDetails = () => {
   const { selectedNetwork } = useNetwork();
   const { allBalances, isLoading } = useBalance();
   const { isInjectedWallet, injectedAddress } = useInjectedWallet();
-  const { user } = usePrivy();
+  const { user } = useAuth();
   const isDark = useActualTheme();
 
   const { handleFundWallet } = useFundWalletHandler("Wallet details");
 
   const activeWallet = isInjectedWallet
     ? { address: injectedAddress }
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet");
+    : user
+      ? { address: user.address }
+      : null;
 
   const activeBalance = isInjectedWallet
     ? allBalances.injectedWallet

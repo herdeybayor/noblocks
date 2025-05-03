@@ -9,7 +9,7 @@ import {
   Wallet01Icon,
 } from "hugeicons-react";
 
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useSmartWallets } from "../context/SmartWalletContext";
 import { BaseError, encodeFunctionData, erc20Abi, parseUnits } from "viem";
 
 import { useBalance } from "../context";

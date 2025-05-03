@@ -7,12 +7,13 @@ import {
   useState,
 } from "react";
 import { fetchWalletBalance, getRpcUrl } from "../utils";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useAuth } from "./AuthContext";
 import { useNetwork } from "./NetworksContext";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useSmartWallets } from "./SmartWalletContext";
 import { createPublicClient, http } from "viem";
 import { useInjectedWallet } from "./InjectedWalletContext";
 import { bsc } from "viem/chains";
+import { useWallets } from "../hooks/useWalletHooks";
 
 interface WalletBalances {
   total: number;
@@ -37,9 +38,9 @@ const BalanceContext = createContext<BalanceContextProps | undefined>(
 );
 
 export const BalanceProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const { ready, user } = usePrivy();
+  const { isLoading: authLoading, user } = useAuth();
   const { wallets } = useWallets();
-  const { client } = useSmartWallets();
+  const { activeSmartWallet } = useSmartWallets();
   const { selectedNetwork } = useNetwork();
   const { isInjectedWallet, injectedAddress, injectedReady, injectedProvider } =
     useInjectedWallet();
@@ -56,21 +57,11 @@ export const BalanceProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsLoading(true);
 
     try {
-      if (ready && !isInjectedWallet) {
-        const smartWalletAccount = user?.linkedAccounts.find(
-          (account) => account.type === "smart_wallet",
-        );
-        const externalWalletAccount = wallets.find(
-          (account) => account.connectorType === "injected",
-        );
-
-        if (client) {
-          await client.switchChain({
-            id: selectedNetwork.chain.id,
-          });
-        }
-
-        await externalWalletAccount?.switchChain(selectedNetwork.chain.id);
+      if (!authLoading && !isInjectedWallet) {
+        const smartWalletAddress = activeSmartWallet?.address;
+        const externalWalletAddress = wallets.find(
+          (account) => account.walletClientType === "injected",
+        )?.address;
 
         const publicClient = createPublicClient({
           chain: selectedNetwork.chain,
@@ -81,20 +72,20 @@ export const BalanceProvider: FC<{ children: ReactNode }> = ({ children }) => {
           ),
         });
 
-        if (smartWalletAccount) {
+        if (smartWalletAddress) {
           const result = await fetchWalletBalance(
             publicClient,
-            smartWalletAccount.address,
+            smartWalletAddress,
           );
           setSmartWalletBalance(result);
         } else {
           setSmartWalletBalance(null);
         }
 
-        if (externalWalletAccount) {
+        if (externalWalletAddress) {
           const result = await fetchWalletBalance(
             publicClient,
-            externalWalletAccount.address,
+            externalWalletAddress,
           );
           setExternalWalletBalance(result);
         } else {
@@ -141,7 +132,7 @@ export const BalanceProvider: FC<{ children: ReactNode }> = ({ children }) => {
     fetchBalances();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    ready,
+    authLoading,
     user,
     selectedNetwork,
     isInjectedWallet,

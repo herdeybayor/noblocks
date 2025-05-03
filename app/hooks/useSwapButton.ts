@@ -1,4 +1,4 @@
-import { usePrivy } from "@privy-io/react-auth";
+import { useAuth } from "../context/AuthContext";
 import { UseFormWatch } from "react-hook-form";
 import { useInjectedWallet } from "../context";
 
@@ -17,7 +17,7 @@ export function useSwapButton({
   isValid,
   isUserVerified,
 }: UseSwapButtonProps) {
-  const { authenticated } = usePrivy();
+  const { isAuthenticated } = useAuth();
   const { isInjectedWallet } = useInjectedWallet();
   const { amountSent, currency, recipientName } = watch();
 
@@ -31,13 +31,13 @@ export function useSwapButton({
       return false;
     }
 
-    if (hasInsufficientBalance && !isInjectedWallet && authenticated) {
+    if (hasInsufficientBalance && !isInjectedWallet && isAuthenticated) {
       return true;
     }
 
     if (
       !isUserVerified &&
-      (authenticated || isInjectedWallet) &&
+      (isAuthenticated || isInjectedWallet) &&
       amountSent > 0 &&
       isCurrencySelected &&
       isAmountValid &&
@@ -57,11 +57,11 @@ export function useSwapButton({
       return false;
     }
 
-    if (!authenticated && !isInjectedWallet) {
+    if (!isAuthenticated && !isInjectedWallet) {
       return true; // Enable for login if amount and currency are valid
     }
 
-    return Boolean(recipientName); // Additional check for authenticated users
+    return Boolean(recipientName); // Additional check for isAuthenticated users
   })();
 
   const buttonText = (() => {
@@ -69,13 +69,13 @@ export function useSwapButton({
       return "Insufficient balance";
     }
 
-    if (authenticated && hasInsufficientBalance && !isInjectedWallet) {
+    if (isAuthenticated && hasInsufficientBalance && !isInjectedWallet) {
       return "Fund wallet";
     }
 
     if (
       !isUserVerified &&
-      (authenticated || isInjectedWallet) &&
+      (isAuthenticated || isInjectedWallet) &&
       amountSent > 0
     ) {
       return "Get started";
@@ -91,13 +91,13 @@ export function useSwapButton({
     setIsKycModalOpen: () => void,
     isUserVerified: boolean,
   ) => {
-    if (!authenticated && !isInjectedWallet) {
+    if (!isAuthenticated && !isInjectedWallet) {
       return login;
     }
-    if (hasInsufficientBalance && !isInjectedWallet && authenticated) {
+    if (hasInsufficientBalance && !isInjectedWallet && isAuthenticated) {
       return handleFundWallet;
     }
-    if (!isUserVerified && (authenticated || isInjectedWallet)) {
+    if (!isUserVerified && (isAuthenticated || isInjectedWallet)) {
       return setIsKycModalOpen;
     }
     return handleSwap;

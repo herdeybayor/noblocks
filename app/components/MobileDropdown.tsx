@@ -1,52 +1,52 @@
 "use client";
-import Image from "next/image";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
-import { usePrivy, useMfaEnrollment } from "@privy-io/react-auth";
 import {
-  Cancel01Icon,
-  ArrowRight01Icon,
-  Mail01Icon,
-  ColorsIcon,
-  Logout03Icon,
   AccessIcon,
+  ArrowDown01Icon,
+  ArrowLeft02Icon,
+  ArrowRight01Icon,
+  Cancel01Icon,
+  Clock01Icon,
+  ColorsIcon,
+  CustomerService01Icon,
+  Key01Icon,
+  Logout03Icon,
+  Mail01Icon,
   Setting07Icon,
   Wallet01Icon,
-  ArrowLeft02Icon,
-  ArrowDown01Icon,
-  CustomerService01Icon,
-  Clock01Icon,
-  Key01Icon,
 } from "hugeicons-react";
+import Image from "next/image";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useMfaEnrollment } from "../hooks/useWalletHooks";
 
-import { useNetwork } from "../context/NetworksContext";
+import config from "@/app/lib/config";
+import { ImSpinner } from "react-icons/im";
+import { PiCheck } from "react-icons/pi";
+import { toast } from "sonner";
+import { useInjectedWallet } from "../context";
 import { useBalance } from "../context/BalanceContext";
+import { useNetwork } from "../context/NetworksContext";
+import { useStep } from "../context/StepContext";
+import { useActualTheme } from "../hooks/useActualTheme";
+import { useFundWalletHandler } from "../hooks/useFundWalletHandler";
+import { useWalletDisconnect } from "../hooks/useWalletDisconnect";
+import { useLogout } from "../hooks/useWalletHooks";
+import { networks } from "../mocks";
+import { Network, STEPS, Token } from "../types";
 import {
   classNames,
-  fetchSupportedTokens,
-  handleNetworkSwitch,
   detectWalletProvider,
+  fetchSupportedTokens,
   getNetworkImageUrl,
+  handleNetworkSwitch,
 } from "../utils";
-import { useLogout } from "@privy-io/react-auth";
-import { PiCheck } from "react-icons/pi";
-import { ImSpinner } from "react-icons/im";
-import { ThemeSwitch } from "./ThemeSwitch";
-import { TransferModal } from "./TransferModal";
-import { networks } from "../mocks";
-import { Network, Token } from "../types";
-import { toast } from "sonner";
-import { useStep } from "../context/StepContext";
-import { STEPS } from "../types";
-import { FundWalletModal } from "./FundWalletModal";
-import { useFundWalletHandler } from "../hooks/useFundWalletHandler";
-import config from "@/app/lib/config";
-import { useInjectedWallet } from "../context";
-import { TransactionHistoryModal } from "./transaction/TransactionHistoryModal";
-import { useWalletDisconnect } from "../hooks/useWalletDisconnect";
-import { useActualTheme } from "../hooks/useActualTheme";
 import { BalanceCardSkeleton } from "./BalanceSkeleton";
+import { FundWalletModal } from "./FundWalletModal";
+import { ThemeSwitch } from "./ThemeSwitch";
+import { TransactionHistoryModal } from "./transaction/TransactionHistoryModal";
+import { TransferModal } from "./TransferModal";
 
 export const MobileDropdown = ({
   isOpen,
@@ -66,26 +66,24 @@ export const MobileDropdown = ({
     useState(false);
 
   const { selectedNetwork, setSelectedNetwork } = useNetwork();
-  const { user, exportWallet, linkEmail, updateEmail } = usePrivy();
+  const { user, exportWallet, linkEmail, updateEmail } = useAuth();
   const { allBalances, isLoading } = useBalance();
-  const { logout } = useLogout({
-    onSuccess: () => {
-      setIsLoggingOut(false);
-    },
-  });
+  const logout = useLogout();
   const { isInjectedWallet, injectedAddress } = useInjectedWallet();
 
   const { handleFundWallet } = useFundWalletHandler("Mobile menu");
 
   const smartWallet = isInjectedWallet
     ? { address: injectedAddress }
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet");
+    : user
+      ? { address: user.address }
+      : null;
 
   const { currentStep } = useStep();
 
   const { disconnectWallet } = useWalletDisconnect();
 
-  const { showMfaEnrollmentModal } = useMfaEnrollment();
+  const { enrollInMfa } = useMfaEnrollment();
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(smartWallet?.address ?? "");
@@ -172,10 +170,12 @@ export const MobileDropdown = ({
       if (window.ethereum) {
         await disconnectWallet();
       }
+      setIsLoggingOut(false);
     } catch (error) {
       console.error("Error during logout:", error);
       // Still proceed with logout even if wallet disconnection fails
       await logout();
+      setIsLoggingOut(false);
     }
   };
 
@@ -476,14 +476,16 @@ export const MobileDropdown = ({
                             {!isInjectedWallet && (
                               <button
                                 type="button"
-                                onClick={showMfaEnrollmentModal}
+                                onClick={() =>
+                                  toast.info(
+                                    "MFA functionality is currently unavailable",
+                                  )
+                                }
                                 className="flex w-full items-center gap-2.5"
                               >
                                 <Key01Icon className="size-5 text-icon-outline-secondary dark:text-white/50" />
                                 <p className="text-left text-text-body dark:text-white/80">
-                                  {user?.mfaMethods?.length
-                                    ? "Manage MFA"
-                                    : "Enable MFA"}
+                                  Enable MFA
                                 </p>
                               </button>
                             )}
@@ -491,7 +493,11 @@ export const MobileDropdown = ({
                             {!isInjectedWallet && user?.email ? (
                               <button
                                 type="button"
-                                onClick={updateEmail}
+                                onClick={() =>
+                                  toast.info(
+                                    "Email update is currently unavailable",
+                                  )
+                                }
                                 className="flex w-full items-center justify-between"
                               >
                                 <div className="flex items-center gap-3">
@@ -502,7 +508,7 @@ export const MobileDropdown = ({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="max-w-36 truncate text-text-disabled dark:text-white/30">
-                                    {user.email.address}
+                                    {user.email}
                                   </span>
                                   <ArrowRight01Icon className="size-4 text-outline-gray dark:text-white/50" />
                                 </div>
@@ -510,7 +516,11 @@ export const MobileDropdown = ({
                             ) : !isInjectedWallet ? (
                               <button
                                 type="button"
-                                onClick={linkEmail}
+                                onClick={() =>
+                                  toast.info(
+                                    "Link email is currently unavailable",
+                                  )
+                                }
                                 className="flex w-full items-center justify-between"
                               >
                                 <div className="flex items-center gap-3">
@@ -526,7 +536,11 @@ export const MobileDropdown = ({
                             {!isInjectedWallet && (
                               <button
                                 type="button"
-                                onClick={exportWallet}
+                                onClick={() =>
+                                  toast.info(
+                                    "Export wallet is currently unavailable",
+                                  )
+                                }
                                 className="flex w-full items-center justify-between"
                               >
                                 <div className="flex items-center gap-3">

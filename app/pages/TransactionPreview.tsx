@@ -20,8 +20,8 @@ import { useNetwork } from "../context/NetworksContext";
 import type { Token, TransactionPreviewProps } from "../types";
 import { primaryBtnClasses, secondaryBtnClasses } from "../components";
 import { gatewayAbi } from "../api/abi";
-import { usePrivy } from "@privy-io/react-auth";
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useAuth } from "../context/AuthContext";
+import { useSmartWallets } from "../context/SmartWalletContext";
 import {
   type BaseError,
   decodeEventLog,
@@ -54,7 +54,7 @@ export const TransactionPreview = ({
   createdAt,
 }: TransactionPreviewProps) => {
   const isDark = useActualTheme();
-  const { user } = usePrivy();
+  const { user } = useAuth();
   const { client } = useSmartWallets();
   const { isInjectedWallet, injectedAddress, injectedProvider, injectedReady } =
     useInjectedWallet();
@@ -125,7 +125,9 @@ export const TransactionPreview = ({
 
   const smartWallet = isInjectedWallet
     ? null
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet");
+    : user
+      ? { address: user.address, type: "smart_wallet" }
+      : null;
 
   const activeWallet = injectedWallet || smartWallet;
 

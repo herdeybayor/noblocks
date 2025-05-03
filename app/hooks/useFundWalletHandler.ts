@@ -1,4 +1,4 @@
-import { useFundWallet } from "@privy-io/react-auth";
+import { useFundWallet } from "../hooks/useWalletHooks";
 import { useNetwork } from "../context/NetworksContext";
 import { useBalance } from "../context/BalanceContext";
 import { trackEvent } from "./analytics";

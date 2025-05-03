@@ -1,37 +1,54 @@
 "use client";
+import config from "@/app/lib/config";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef, useState } from "react";
-import {
-  useLinkAccount,
-  useLogout,
-  usePrivy,
-  useMfaEnrollment,
-} from "@privy-io/react-auth";
-import { ImSpinner } from "react-icons/im";
-import { PiCheck } from "react-icons/pi";
-import { useOutsideClick } from "../hooks";
-import { classNames, shortenAddress } from "../utils";
-import { dropdownVariants } from "./AnimatedComponents";
 import {
   AccessIcon,
   Copy01Icon,
   CustomerService01Icon,
+  Key01Icon,
   Logout03Icon,
   Mail01Icon,
   Setting07Icon,
   Wallet01Icon,
-  Key01Icon,
 } from "hugeicons-react";
+import { useRef, useState } from "react";
+import { ImSpinner } from "react-icons/im";
+import { PiCheck } from "react-icons/pi";
 import { toast } from "sonner";
-import config from "@/app/lib/config";
 import { useInjectedWallet } from "../context";
-import { createWalletClient, custom } from "viem";
-import { trackEvent } from "../hooks/analytics";
+import { useAuth } from "../context/AuthContext";
+import { useOutsideClick } from "../hooks";
 import { useWalletDisconnect } from "../hooks/useWalletDisconnect";
+import {
+  useLinkAccount,
+  useLogout,
+  useMfaEnrollment,
+} from "../hooks/useWalletHooks";
+
+// Utility functions
+const classNames = (...classes: string[]) => classes.filter(Boolean).join(" ");
+const shortenAddress = (address: string, chars = 4): string => {
+  return address.length > chars * 2 + 5
+    ? `${address.substring(0, chars + 2)}...${address.substring(address.length - chars)}`
+    : address;
+};
+
+const dropdownVariants = {
+  open: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+  closed: {
+    opacity: 0,
+    y: -10,
+    transition: { duration: 0.2 },
+  },
+};
 
 export const SettingsDropdown = () => {
-  const { user, exportWallet, updateEmail } = usePrivy();
-  const { showMfaEnrollmentModal } = useMfaEnrollment();
+  const { user, isAuthenticated } = useAuth();
+  // const { showMfaEnrollmentModal } = useMfaEnrollment();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { isInjectedWallet, injectedAddress } = useInjectedWallet();
 
@@ -44,10 +61,7 @@ export const SettingsDropdown = () => {
     handler: () => setIsOpen(false),
   });
 
-  const walletAddress = isInjectedWallet
-    ? injectedAddress
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet")
-        ?.address;
+  const walletAddress = isInjectedWallet ? injectedAddress : user?.address;
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(walletAddress ?? "");
@@ -55,22 +69,9 @@ export const SettingsDropdown = () => {
     setTimeout(() => setIsAddressCopied(false), 2000);
   };
 
-  const { logout } = useLogout({
-    onSuccess: () => {
-      setIsLoggingOut(false);
-    },
-  });
+  const logout = useLogout();
 
-  const { linkEmail } = useLinkAccount({
-    onSuccess: ({ user }) => {
-      toast.success(`${user.email} linked successfully`);
-    },
-    onError: () => {
-      toast.error("Error linking account", {
-        description: "You might have this email linked already",
-      });
-    },
-  });
+  const linkEmail = useLinkAccount();
 
   const { disconnectWallet } = useWalletDisconnect();
 
@@ -158,13 +159,13 @@ export const SettingsDropdown = () => {
                   <button
                     type="button"
                     className="group flex w-full items-center justify-between gap-4"
-                    onClick={showMfaEnrollmentModal}
+                    onClick={() =>
+                      toast.info("MFA functionality is currently unavailable")
+                    }
                   >
                     <div className="flex items-center gap-2.5">
                       <Key01Icon className="size-5 text-icon-outline-secondary dark:text-white/50" />
-                      <p>
-                        {user?.mfaMethods?.length ? "Manage MFA" : "Enable MFA"}
-                      </p>
+                      <p>Enable MFA</p>
                     </div>
                   </button>
                 </li>
@@ -179,14 +180,18 @@ export const SettingsDropdown = () => {
                     <button
                       type="button"
                       className="group flex w-full items-center justify-between gap-4"
-                      onClick={updateEmail}
+                      onClick={() =>
+                        toast.info(
+                          "Email update functionality is currently unavailable",
+                        )
+                      }
                     >
                       <div className="flex items-center gap-2.5">
                         <Mail01Icon className="size-5 flex-shrink-0 text-icon-outline-secondary dark:text-white/50" />
                         <p className="whitespace-nowrap">Linked email</p>
                       </div>
                       <p className="max-w-32 truncate text-neutral-500 dark:text-white/40">
-                        {user.email.address}
+                        {user.email}
                       </p>
                     </button>
                   </li>
@@ -198,7 +203,11 @@ export const SettingsDropdown = () => {
                     <button
                       type="button"
                       className="group flex w-full items-center justify-between gap-2.5"
-                      onClick={linkEmail}
+                      onClick={() =>
+                        toast.info(
+                          "Link email functionality is currently unavailable",
+                        )
+                      }
                     >
                       <div className="flex items-center gap-2.5">
                         <Mail01Icon className="size-5 text-icon-outline-secondary dark:text-white/50" />
@@ -211,7 +220,11 @@ export const SettingsDropdown = () => {
                 <li
                   role="menuitem"
                   className="flex cursor-pointer items-center gap-2.5 rounded-lg transition-all duration-300 hover:bg-accent-gray dark:hover:bg-neutral-700"
-                  onClick={exportWallet}
+                  onClick={() =>
+                    toast.info(
+                      "Export wallet functionality is currently unavailable",
+                    )
+                  }
                 >
                   <AccessIcon className="size-5 text-icon-outline-secondary dark:text-white/50" />
                   <p>Export wallet</p>

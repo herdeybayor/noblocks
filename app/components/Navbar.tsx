@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { usePathname } from "next/navigation";
 
 import {
@@ -25,7 +24,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MobileDropdown } from "./MobileDropdown";
 import Image from "next/image";
 import { useNetwork } from "../context/NetworksContext";
-import { useInjectedWallet } from "../context";
+import { useInjectedWallet, useAuth } from "../context";
 import { useActualTheme } from "../hooks/useActualTheme";
 
 export const Navbar = () => {
@@ -38,38 +37,26 @@ export const Navbar = () => {
   const { isInjectedWallet, injectedAddress } = useInjectedWallet();
   const isDark = useActualTheme();
 
-  const { ready, authenticated, user } = usePrivy();
+  // Replace Privy hooks with our new auth hook
+  const { user, isAuthenticated, isLoading, login } = useAuth();
 
-  const activeWallet = isInjectedWallet
-    ? { address: injectedAddress, type: "injected_wallet" }
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet");
+  // Get wallet address for display
+  const walletAddress =
+    isInjectedWallet && injectedAddress ? injectedAddress : user?.address || "";
 
-  const { login } = useLogin({
-    onComplete: async ({ user, isNewUser, loginMethod }) => {
-      if (user.wallet?.address) {
-        identifyUser(user.wallet.address, {
-          login_method: loginMethod,
-          isNewUser,
-          createdAt: user.createdAt,
-          email: user.email,
-        });
-
-        if (isNewUser) {
-          localStorage.removeItem(`hasSeenNetworkModal-${user.wallet.address}`);
-
-          trackEvent("Sign up completed", {
-            "Login method": loginMethod,
-            user_id: user.wallet.address,
-            "Email address": user.email,
-            "Sign up date": user.createdAt.toISOString(),
-            "Noblocks balance": 0, // a new user should always have 0 balance
-          });
-        } else {
-          trackEvent("Login completed", { "Login method": loginMethod });
-        }
-      }
-    },
-  });
+  // Track user login/signup (adapted from previous Privy implementation)
+  useEffect(() => {
+    if (isAuthenticated && user && user.address) {
+      // Track isAuthenticated user with their address directly as string
+      identifyUser(user.address, {
+        login_method: (user as any).provider || "unknown",
+        // Mock these required properties with reasonable values since they were from Privy
+        isNewUser: false,
+        createdAt: new Date(),
+        email: user.email ? { address: user.email } : null,
+      });
+    }
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     setMounted(true);
@@ -89,6 +76,11 @@ export const Navbar = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLogin = () => {
+    trackEvent("Login attempt", { method: "navbar" });
+    login("credentials");
+  };
 
   if (!mounted) return null;
 
@@ -176,7 +168,7 @@ export const Navbar = () => {
         </div>
 
         <div className="flex gap-3 text-sm font-medium *:flex-shrink-0 sm:gap-4">
-          {(ready && authenticated) || isInjectedWallet ? (
+          {(isAuthenticated && !isLoading) || isInjectedWallet ? (
             <>
               <div className="hidden sm:block">
                 <WalletDetails />
@@ -203,7 +195,7 @@ export const Navbar = () => {
                   className="size-5 rounded-full"
                 />
                 <span className="font-medium dark:text-white">
-                  {shortenAddress(activeWallet?.address ?? "", 6)}
+                  {shortenAddress(walletAddress, 6)}
                 </span>
                 <ArrowDown01Icon className="size-4 dark:text-white/50" />
               </button>
@@ -220,7 +212,7 @@ export const Navbar = () => {
               <button
                 type="button"
                 className={`${baseBtnClasses} min-h-9 bg-lavender-50 text-lavender-500 hover:bg-lavender-100 dark:bg-lavender-500/[12%] dark:text-lavender-500 dark:hover:bg-lavender-500/[20%]`}
-                onClick={() => login()}
+                onClick={handleLogin}
               >
                 Sign in
               </button>
