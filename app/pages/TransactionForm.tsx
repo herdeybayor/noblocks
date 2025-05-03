@@ -2,7 +2,8 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { ImSpinner, ImSpinner3 } from "react-icons/im";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useAuth } from "../context/AuthContext";
+import { useWallets } from "../hooks/useWalletHooks";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -48,7 +49,7 @@ export const TransactionForm = ({
   const searchParams = useSearchParams();
   // Destructure stateProps
   const { rate, isFetchingRate, setOrderId } = stateProps;
-  const { authenticated, ready, login, user } = usePrivy();
+  const { isAuthenticated, ready, login, user } = useAuth();
   const { wallets } = useWallets();
   const { selectedNetwork } = useNetwork();
   const { smartWalletBalance, injectedWalletBalance, isLoading } = useBalance();
@@ -76,7 +77,9 @@ export const TransactionForm = ({
 
   const activeWallet = isInjectedWallet
     ? { address: injectedAddress }
-    : user?.linkedAccounts.find((account) => account.type === "smart_wallet");
+    : embeddedWalletAddress
+      ? { address: embeddedWalletAddress }
+      : null;
 
   const activeBalance = isInjectedWallet
     ? injectedWalletBalance
@@ -574,7 +577,7 @@ export const TransactionForm = ({
                 }}
                 value={formattedSentAmount}
                 className={`w-full rounded-xl border-b border-transparent bg-transparent py-2 text-2xl outline-none transition-all placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed dark:placeholder:text-white/30 ${
-                  authenticated && (amountSent > balance || errors.amountSent)
+                  isAuthenticated && (amountSent > balance || errors.amountSent)
                     ? "text-red-500 dark:text-red-500"
                     : "text-neutral-900 dark:text-white/80"
                 }`}
@@ -656,9 +659,10 @@ export const TransactionForm = ({
                 isCTA={
                   // Show CTA styling when:
                   // 1. No currency is selected AND
-                  // 2. Either user is not authenticated OR (user is authenticated AND doesn't need funding)
+                  // 2. Either user is not isAuthenticated OR (user is isAuthenticated AND doesn't need funding)
                   !currency &&
-                  (!authenticated || (authenticated && !(amountSent > balance)))
+                  (!isAuthenticated ||
+                    (isAuthenticated && !(amountSent > balance)))
                 }
               />
             </div>
@@ -668,7 +672,7 @@ export const TransactionForm = ({
         {/* Recipient and memo */}
         <AnimatePresence>
           {currency &&
-            (authenticated || isInjectedWallet) &&
+            (isAuthenticated || isInjectedWallet) &&
             isUserVerified && (
               <AnimatedComponent
                 variant={slideInOut}
@@ -736,7 +740,7 @@ export const TransactionForm = ({
               disabled={!isEnabled}
               onClick={buttonAction(
                 handleSwap,
-                login,
+                () => login("wallet"),
                 () =>
                   handleFundWallet(
                     activeWallet?.address ?? "",

@@ -1,15 +1,22 @@
-import { useFundWallet } from "@privy-io/react-auth";
+import { useFundWallet } from "../hooks/useWalletHooks";
 import { useNetwork } from "../context/NetworksContext";
 import { useBalance } from "../context/BalanceContext";
 import { trackEvent } from "./analytics";
 import { fetchSupportedTokens } from "../utils";
+import type { Chain } from "viem";
 
 export const useFundWalletHandler = (entryPoint: string) => {
   const { selectedNetwork } = useNetwork();
   const { refreshBalance } = useBalance();
 
   const { fundWallet } = useFundWallet({
-    onUserExited: ({ fundingMethod, chain }) => {
+    onUserExited: ({
+      fundingMethod,
+      chain,
+    }: {
+      fundingMethod: string;
+      chain: Chain;
+    }) => {
       const lastFunding = JSON.parse(
         localStorage.getItem("lastFundingAttempt") || "{}",
       );

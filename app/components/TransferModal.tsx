@@ -9,7 +9,7 @@ import {
   Wallet01Icon,
 } from "hugeicons-react";
 
-import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { useSmartWallets } from "../context/SmartWalletContext";
 import { BaseError, encodeFunctionData, erc20Abi, parseUnits } from "viem";
 
 import { useBalance } from "../context";
@@ -82,7 +82,7 @@ export const TransferModal = ({
   const handleTransfer = async (data: FormData) => {
     try {
       const fetchedTokens: Token[] =
-        fetchSupportedTokens(client?.chain.name) || [];
+        fetchSupportedTokens(selectedNetwork.chain.name) || [];
 
       const searchToken = token.toUpperCase();
       const tokenData = fetchedTokens.find(
@@ -102,15 +102,19 @@ export const TransferModal = ({
       setIsConfirming(true);
 
       await client?.sendTransaction({
-        to: tokenAddress,
-        data: encodeFunctionData({
-          abi: erc20Abi,
-          functionName: "transfer",
-          args: [
-            data.recipientAddress as `0x${string}`,
-            parseUnits(data.amount.toString(), tokenDecimals),
-          ],
-        }),
+        calls: [
+          {
+            to: tokenAddress,
+            data: encodeFunctionData({
+              abi: erc20Abi,
+              functionName: "transfer",
+              args: [
+                data.recipientAddress as `0x${string}`,
+                parseUnits(data.amount.toString(), tokenDecimals),
+              ],
+            }),
+          },
+        ],
       });
 
       setTransferAmount(data.amount.toString());

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { PiCheck } from "react-icons/pi";
 import { HelpCircleIcon, ArrowLeft02Icon, Cancel01Icon } from "hugeicons-react";
-import { usePrivy } from "@privy-io/react-auth";
+import { useAuth } from "../context/AuthContext";
 import { networks } from "../mocks";
 import { useNetwork } from "../context/NetworksContext";
 import { AnimatedModal } from "./AnimatedComponents";
@@ -23,13 +23,13 @@ export const NetworkSelectionModal = () => {
   const [showInfo, setShowInfo] = useState(false);
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const { selectedNetwork, setSelectedNetwork } = useNetwork();
-  const { authenticated, user } = usePrivy();
+  const { isAuthenticated, user } = useAuth();
   const useInjectedWallet = shouldUseInjectedWallet(searchParams);
   const isDark = useActualTheme();
 
   useEffect(() => {
-    if (!hasCheckedStorage && authenticated && user?.wallet?.address) {
-      const storageKey = `hasSeenNetworkModal-${user.wallet.address}`;
+    if (!hasCheckedStorage && isAuthenticated && user?.address) {
+      const storageKey = `hasSeenNetworkModal-${user.address}`;
       const hasSeenModal = localStorage.getItem(storageKey);
 
       if (!hasSeenModal) {
@@ -37,11 +37,11 @@ export const NetworkSelectionModal = () => {
       }
       setHasCheckedStorage(true);
     }
-  }, [hasCheckedStorage, authenticated, user?.wallet?.address]);
+  }, [hasCheckedStorage, isAuthenticated, user?.address]);
 
   const handleClose = () => {
-    if (user?.wallet?.address) {
-      const storageKey = `hasSeenNetworkModal-${user.wallet.address}`;
+    if (user?.address) {
+      const storageKey = `hasSeenNetworkModal-${user.address}`;
       localStorage.setItem(storageKey, "true");
     }
     setIsOpen(false);
@@ -63,7 +63,7 @@ export const NetworkSelectionModal = () => {
     }
   };
 
-  if (!authenticated) return null;
+  if (!isAuthenticated) return null;
 
   return (
     <AnimatedModal isOpen={isOpen} onClose={handleClose} maxWidth="28.5rem">

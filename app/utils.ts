@@ -1,6 +1,7 @@
 import JSEncrypt from "jsencrypt";
 import type { InstitutionProps, Network, Token } from "./types";
 import { erc20Abi } from "viem";
+import { getAddress } from "viem";
 import { colors } from "./mocks";
 import { fetchRate } from "./api/aggregator";
 import { toast } from "sonner";
@@ -639,4 +640,18 @@ export function getNetworkImageUrl(network: Network, isDark: boolean): string {
     return network.imageUrl;
   }
   return isDark ? network.imageUrl.dark : network.imageUrl.light;
+}
+
+/**
+ * Formats an Ethereum address according to EIP-55 checksum encoding.
+ * @param address - The Ethereum address to format.
+ * @returns The address formatted according to EIP-55.
+ */
+export function formatEthAddress(address: string): string {
+  try {
+    return getAddress(address); // viem's getAddress implements EIP-55
+  } catch (error) {
+    console.error("Invalid Ethereum address:", error);
+    return address; // Return original if invalid
+  }
 }

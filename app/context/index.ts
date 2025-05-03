@@ -5,3 +5,5 @@ export {
   InjectedWalletProvider,
   useInjectedWallet,
 } from "./InjectedWalletContext";
+export { AuthProvider, useAuth } from "./AuthContext";
+export { SmartWalletsProvider, useSmartWallets } from "./SmartWalletContext";

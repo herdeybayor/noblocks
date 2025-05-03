@@ -24,7 +24,7 @@ import {
   type StateProps,
   type TransactionStatusType,
 } from "./types";
-import { usePrivy } from "@privy-io/react-auth";
+import { useAuth } from "./context/AuthContext";
 import { useStep } from "./context/StepContext";
 import { clearFormState } from "./utils";
 import { useInjectedWallet } from "./context/InjectedWalletContext";
@@ -34,7 +34,7 @@ import { useInjectedWallet } from "./context/InjectedWalletContext";
  * This component handles the logic and rendering of the home page.
  */
 function HomeImpl({ searchParams }: { searchParams: URLSearchParams }) {
-  const { authenticated, ready } = usePrivy();
+  const { isAuthenticated, isLoading } = useAuth();
   const { currentStep, setCurrentStep } = useStep();
   const { isInjectedWallet, injectedReady } = useInjectedWallet();
 
@@ -100,13 +100,13 @@ function HomeImpl({ searchParams }: { searchParams: URLSearchParams }) {
   useEffect(
     function resetOnLogout() {
       // Reset form if user logs out (but not for injected wallet)
-      if (!authenticated && !isInjectedWallet) {
+      if (!isAuthenticated && !isInjectedWallet) {
         setCurrentStep(STEPS.FORM);
         setFormValues({} as FormData);
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [authenticated, isInjectedWallet],
+    [isAuthenticated, isInjectedWallet],
   );
 
   useEffect(function ensureDefaultToken() {
@@ -249,7 +249,7 @@ function HomeImpl({ searchParams }: { searchParams: URLSearchParams }) {
 
   const showLoading =
     isPageLoading ||
-    (!ready && !isInjectedWallet) ||
+    (isLoading && !isInjectedWallet) ||
     (isInjectedWallet && !injectedReady);
 
   const renderStep = () => {
